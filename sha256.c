@@ -1,5 +1,6 @@
 #include "sha256.h"
 #include <stdint.h>
+#include <sys/types.h>
 
 #define ROTR(x, n) (((x) >> (n)) | ((x) << (32 - (n))))
 #define SHR(x, n) ((x) >> (n))
@@ -27,7 +28,7 @@ static const uint32_t k[64] = {
     0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2};
 
 void sha256_init(SHA256_CTX *ctx) {
-  ctx->len = 0;
+  ctx->datalen = 0;
   ctx->bitlen = 0;
   ctx->state[0] = 0x6a09e667;
   ctx->state[1] = 0xbb67ae85;
@@ -37,4 +38,58 @@ void sha256_init(SHA256_CTX *ctx) {
   ctx->state[5] = 0x9b05688c;
   ctx->state[6] = 0x1f83d9ab;
   ctx->state[7] = 0x5be0cd19;
+}
+
+void sha256_transform(SHA256_CTX *ctx) {
+  uint32_t a, b, c, d, e, f, g, h, t1, t2, m[64];
+  a = ctx->state[0];
+  b = ctx->state[1];
+  c = ctx->state[2];
+  d = ctx->state[3];
+  e = ctx->state[4];
+  f = ctx->state[5];
+  g = ctx->state[6];
+  h = ctx->state[7];
+
+  for (int i = 0, j = 0; i < 16; i++, j += 4)
+    m[i] =
+        (((uint32_t)ctx->data[j] << 24) | ((uint32_t)ctx->data[j + 1] << 16) |
+         ((uint32_t)ctx->data[j + 2] << 8) | ((uint32_t)ctx->data[j + 3]));
+
+  for (int i = 16; i < 64; i++)
+    m[i] = sigma1(m[i - 2]) + m[i - 7] + sigma0(m[i - 15]) + m[i - 16];
+
+  for (int i = 0; i < 64; i++) {
+    t1 = SIGMA1(e) + CH(e, f, g) + h + k[i] + m[i];
+    t2 = SIGMA0(a) + MAJ(a, b, c);
+    h = g;
+    g = f;
+    f = e;
+    e = d + t1;
+    d = c;
+    c = b;
+    b = a;
+    a = t1 + t2;
+  }
+
+  ctx->state[0] += a;
+  ctx->state[1] += b;
+  ctx->state[2] += c;
+  ctx->state[3] += d;
+  ctx->state[4] += e;
+  ctx->state[5] += f;
+  ctx->state[6] += g;
+  ctx->state[7] += h;
+}
+
+void sha256_update(SHA256_CTX *ctx, const uint8_t *data, size_t len) {
+  for (int i = 0; i < len; i++) {
+    ctx->data[ctx->datalen] = data[i];
+    ctx->datalen += 1;
+    if (ctx->datalen == 64) {
+      sha256_transform(ctx);
+      ctx->bitlen += 512;
+      ctx->datalen = 0;
+    }
+  }
 }

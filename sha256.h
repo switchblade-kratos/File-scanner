@@ -5,12 +5,14 @@
 #include <stdint.h>
 
 typedef struct {
-  uint8_t buffer[64];
+  uint8_t data[64];
   uint32_t state[8];
   uint64_t bitlen;
-  size_t len;
+  size_t datalen;
 } SHA256_CTX;
 
 void sha256_init(SHA256_CTX *ctx);
+void sha256_transform(SHA256_CTX *ctx);
+void sha256_update(SHA256_CTX *ctx, const uint8_t data[], size_t len);
 
 #endif
