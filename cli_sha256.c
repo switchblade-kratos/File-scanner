@@ -14,20 +14,10 @@ int main(int argc, char *argv[]) {
     bool valid = false;
 
     if (!strcmp(argv[1], "-f")) {
-      FILE *file = fopen(argv[2], "rb");
-      if (file != NULL) {
-        uint8_t file_chunk[4096]; // Read the file 4KB at a time
-        size_t bytes_read;
-
-        while ((bytes_read = fread(file_chunk, 1, 4096, file)) > 0) {
-          sha256_update(&ctx, file_chunk, bytes_read);
-        }
-
-        sha256_hash(&ctx, hash);
-        fclose(file);
+      if (sha256(argv[2], hash) == 0) {
         valid = true;
       } else
-        printf("%s does not exist\n", argv[2]);
+        printf("%s file does not exist\n", argv[2]);
     } else if (!strcmp(argv[1], "-s")) {
       sha256_update(&ctx, (uint8_t *)argv[2], strlen(argv[2]));
       sha256_hash(&ctx, hash);

@@ -15,5 +15,6 @@ void sha256_init(SHA256_CTX *ctx);
 void sha256_transform(SHA256_CTX *ctx);
 void sha256_update(SHA256_CTX *ctx, const uint8_t data[], size_t len);
 void sha256_hash(SHA256_CTX *ctx, uint8_t *hash);
+int sha256(const char *filename, uint8_t *hash);
 
 #endif

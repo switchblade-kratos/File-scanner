@@ -1,5 +1,7 @@
 #include "sha256.h"
+#include <stddef.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <sys/types.h>
 
 #define ROTR(x, n) (((x) >> (n)) | ((x) << (32 - (n))))
@@ -126,4 +128,25 @@ void sha256_hash(SHA256_CTX *ctx, uint8_t *hash) {
     hash[i * 4 + 2] = (ctx->state[i] >> 8) & 0xFF;
     hash[i * 4 + 3] = (ctx->state[i]) & 0xFF;
   }
+}
+
+int sha256(const char *filename, uint8_t *hash) {
+
+  FILE *file = fopen(filename, "rb");
+  if (file == NULL)
+    return -1;
+
+  SHA256_CTX ctx;
+  sha256_init(&ctx);
+
+  uint8_t file_chunk[4096];
+  size_t bytes_read;
+
+  while ((bytes_read = fread(file_chunk, 1, sizeof(file_chunk), file))) {
+    sha256_update(&ctx, file_chunk, bytes_read);
+  }
+
+  sha256_hash(&ctx, hash);
+  fclose(file);
+  return 0;
 }
