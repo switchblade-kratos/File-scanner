@@ -93,3 +93,37 @@ void sha256_update(SHA256_CTX *ctx, const uint8_t *data, size_t len) {
     }
   }
 }
+
+void sha256_hash(SHA256_CTX *ctx, uint8_t *hash) {
+  ctx->data[ctx->datalen] = 0x80;
+  ctx->datalen++;
+  if (ctx->datalen > 56) {
+    while (ctx->datalen < 64) {
+      ctx->data[ctx->datalen] = 0x00;
+      ctx->datalen++;
+    }
+    sha256_transform(ctx);
+    ctx->datalen = 0;
+  }
+  while (ctx->datalen < 56) {
+    ctx->data[ctx->datalen] = 0x00;
+    ctx->datalen++;
+  }
+  ctx->data[56] = (ctx->bitlen >> 56) & 0xFF;
+  ctx->data[57] = (ctx->bitlen >> 48) & 0xFF;
+  ctx->data[58] = (ctx->bitlen >> 40) & 0xFF;
+  ctx->data[59] = (ctx->bitlen >> 32) & 0xFF;
+  ctx->data[60] = (ctx->bitlen >> 24) & 0xFF;
+  ctx->data[61] = (ctx->bitlen >> 16) & 0xFF;
+  ctx->data[62] = (ctx->bitlen >> 8) & 0xFF;
+  ctx->data[63] = (ctx->bitlen) & 0xFF;
+
+  sha256_transform(ctx);
+
+  for (int i = 0; i < 8; i++) {
+    hash[i * 4] = (ctx->state[i] >> 24) & 0xFF;
+    hash[i * 4 + 1] = (ctx->state[i] >> 16) & 0xFF;
+    hash[i * 4 + 2] = (ctx->state[i] >> 8) & 0xFF;
+    hash[i * 4 + 3] = (ctx->state[i]) & 0xFF;
+  }
+}
