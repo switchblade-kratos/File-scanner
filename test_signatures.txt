@@ -1,0 +1,13 @@
+# This is just to store the hash values to be compared
+
+
+Test-String-ABC : ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad
+Test-Empty-File : e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+EICAR-AV-Test-File:131f95c51cc819465fa1797f6ccacf9d494aa37845325e76313b0a7ce5c44158
+Fake-Ransom.WannaCry : 13c1c9c7e0d37e2fb56dc0835f11cc5cf85e78cd096ddb30e051c5e6d09323eb
+Fake-Trojan.Downloader: 7ab7eb10b70d74a00cb0be937bafbc4c6a61cc7a4a9b4d816436440f34080ea9
+Fake-Worm.Conficker   : d2a80693a77197b1df6306c4b260938f4d9b4b0870cb1e6a920be043df1f043e
+Fake-Spyware.Pegasus :    b115b0fd7008a0d4c6d04c4b69d75ee5a2b16666324cd34d3d5208de1f745037
+Fake-Rootkit.ZeroAccess : c0535e4be2b79ffd93291305436bf889314e4a3faec05ecffcbb7df31ad9e51a
+Fake-Botnet.Mirai : 8c1b97eb4b2323c28059ff94b3c79c8d33d83b4007d4b29bb88eb3fcc8dfcf09
+Test-String-TEST: 9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08

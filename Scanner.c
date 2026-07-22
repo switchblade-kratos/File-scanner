@@ -15,6 +15,7 @@ void directory_scan(const char *dirname) {
       strcmp(dirname, "/sys") == 0 || strcmp(dirname, "/run") == 0) {
     return;
   }
+
   DIR *directory = opendir(dirname);
   if (directory == NULL) {
     return;
@@ -25,6 +26,7 @@ void directory_scan(const char *dirname) {
   while ((entry = readdir(directory)) != NULL) {
     if (!strcmp(entry->d_name, ".") || !strcmp(entry->d_name, ".."))
       continue;
+
     unsigned char type = entry->d_type;
     if (type == DT_UNKNOWN) {
       struct stat statbuf;
