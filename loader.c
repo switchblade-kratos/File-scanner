@@ -1,3 +1,4 @@
+#include "loader.h"
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -109,15 +110,22 @@ int load_signatures(const char *filename) {
   return 0;
 }
 
-int main() {
-  char filename[] = "./test_signatures.txt";
-  if (load_signatures(filename) == 0) {
-    for (int i = 0; i < size; i++) {
-      printf("%s : ", signature[i].name);
-      for (int j = 0; j < 32; j++)
-        printf("%02x", signature[i].hash[j]);
-      printf("\n");
-    }
+void binSearch_Signature(uint8_t hash[32], const char *filepath) {
+  Signatures key;
+  memcpy(key.hash, hash, 32);
+
+  void *result =
+      bsearch(&key, signature, size, sizeof(Signatures), compare_signatures);
+  if (result != NULL) {
+    Signatures *result_key = (Signatures *)result;
+    printf("\033[1;31m[!] Malware Found:\033[0m\n");
+    printf("Filepath : %s\n", filepath);
+    printf("Match : %s\n\n", result_key->name);
+    ;
   }
-  return 0;
+}
+
+void free_Signatures() {
+  if (signature != NULL)
+    free(signature);
 }

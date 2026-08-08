@@ -1,14 +1,10 @@
+#include "loader.h"
 #include "sha256.h"
 #include <dirent.h>
-#include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
-
-typedef struct {
-  uint8_t bytes[32];
-} HASH256;
 
 void directory_scan(const char *dirname) {
   if (strcmp(dirname, "/dev") == 0 || strcmp(dirname, "/proc") == 0 ||
@@ -42,20 +38,10 @@ void directory_scan(const char *dirname) {
     if (type == DT_DIR)
       directory_scan(path);
     else if (type == DT_REG) {
-      HASH256 hashval;
-      sha256(path, hashval.bytes);
-      printf("File: %s -> ", path);
-      for (int i = 0; i < 32; i++)
-        printf("%02x", hashval.bytes[i]);
-      printf("\n");
+      uint8_t hashval[32];
+      sha256(path, hashval);
+      binSearch_Signature(hashval, path);
     }
   }
   closedir(directory);
-}
-int main(int argc, char *argv[]) {
-  char dirname[] = "/home/username/test";
-
-  directory_scan(dirname);
-
-  return 0;
 }
