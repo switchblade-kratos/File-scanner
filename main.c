@@ -1,10 +1,16 @@
 #include "loader.h"
 #include "scanner.h"
+#include <errno.h>
 #include <getopt.h>
 #include <stdio.h>
+#include <string.h>
 
 int main(int argc, char *argv[]) {
-  load_signatures("./test_signatures.txt");
+  int success = load_signatures("./test_signatures.txt");
+  if (success == -1) {
+    fprintf(stderr, "Error: Could not load signatures: %s", strerror(errno));
+    return -1;
+  }
   char *filename = NULL;
   char *dirname = NULL;
 

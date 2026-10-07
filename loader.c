@@ -1,4 +1,6 @@
 #include "loader.h"
+#include <ctype.h>
+#include <errno.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -49,64 +51,126 @@ void hex_string_to_binary(const char *hex_string, uint8_t *out_binary) {
   }
 }
 
-Signatures *signature = NULL;
-size_t size = 0;
+static Signatures *signature = NULL;
+static size_t signature_count = 0;
+
+// Returns 1 if s is exactly 64 hex characters, else 0
+static int is_valid_hash(const char *s) {
+  if (strlen(s) != 64)
+    return 0;
+  for (int i = 0; i < 64; i++) {
+    if (!isxdigit((unsigned char)s[i]))
+      return 0;
+  }
+  return 1;
+}
 
 int load_signatures(const char *filename) {
   FILE *file = fopen(filename, "r");
   if (file == NULL) {
-    printf("Could not load the file\n");
+    fprintf(stderr, "Could not open %s: %s\n", filename, strerror(errno));
     return -1;
   }
 
   size_t capacity = 25;
-  signature = (Signatures *)malloc(capacity * sizeof(Signatures));
-  if (signature == NULL)
+  signature = malloc(capacity * sizeof(Signatures));
+  if (signature == NULL) {
+    fclose(file);
     return -1;
+  }
+  signature_count = 0;
 
   char line[256];
+  size_t line_no = 0;
+  size_t skipped = 0;
+
   while (fgets(line, sizeof(line), file) != NULL) {
-    if (strstr(line, "#") != NULL || strstr(line, "//"))
+    line_no++;
+
+    // Line too long for the buffer: throw away the rest of it
+    size_t len = strlen(line);
+    if (len > 0 && line[len - 1] != '\n' && !feof(file)) {
+      int c;
+      while ((c = fgetc(file)) != '\n' && c != EOF)
+        ;
+      fprintf(stderr, "Warning: line %zu is too long, skipped\n", line_no);
+      skipped++;
+      continue;
+    }
+
+    // Strip \n and \r (handles Windows line endings)
+    line[strcspn(line, "\r\n")] = '\0';
+
+    // Skip leading whitespace, then blank lines and comments
+    char *start = line;
+    while (*start == ' ' || *start == '\t')
+      start++;
+    if (*start == '\0' || *start == '#' || strncmp(start, "//", 2) == 0)
       continue;
 
-    line[strcspn(line, "\n")] = 0;
-    if (strlen(line) == 0)
-      continue;
-
-    char *name_token = strtok(line, ":");
+    char *name_token = strtok(start, ":");
     char *hash_token = strtok(NULL, "");
-
-    if (name_token == NULL || hash_token == NULL)
+    if (name_token == NULL || hash_token == NULL) {
+      fprintf(stderr, "Warning: line %zu has no 'name: hash' format, skipped\n",
+              line_no);
+      skipped++;
       continue;
+    }
 
-    while (*hash_token == ' ')
+    // Trim spaces around the hash
+    while (*hash_token == ' ' || *hash_token == '\t')
       hash_token++;
-
-    int name_len = strlen(name_token);
-    while (name_len > 0 && name_token[name_len - 1] == ' ') {
-      name_token[name_len - 1] = '\0';
-      name_len--;
+    size_t hash_len = strlen(hash_token);
+    while (hash_len > 0 && (hash_token[hash_len - 1] == ' ' ||
+                            hash_token[hash_len - 1] == '\t')) {
+      hash_token[--hash_len] = '\0';
     }
 
-    if (size >= capacity) {
-      capacity *= 2;
-      signature =
-          (Signatures *)realloc(signature, capacity * sizeof(Signatures));
+    // Trim trailing spaces from the name
+    size_t name_len = strlen(name_token);
+    while (name_len > 0 && (name_token[name_len - 1] == ' ' ||
+                            name_token[name_len - 1] == '\t')) {
+      name_token[--name_len] = '\0';
     }
 
-    strncpy(signature[size].name, name_token, sizeof(signature[size].name) - 1);
-    signature[size].name[sizeof(signature[size].name) - 1] = '\0';
+    if (!is_valid_hash(hash_token)) {
+      fprintf(stderr,
+              "Warning: line %zu has an invalid SHA-256 hash, skipped\n",
+              line_no);
+      skipped++;
+      continue;
+    }
 
-    hex_string_to_binary(hash_token, signature[size].hash);
+    // Grow the array if needed, without losing the old pointer on failure
+    if (signature_count >= capacity) {
+      size_t new_capacity = capacity * 2;
+      Signatures *tmp = realloc(signature, new_capacity * sizeof(Signatures));
+      if (tmp == NULL) {
+        fprintf(stderr, "Error: out of memory while loading signatures\n");
+        fclose(file);
+        free(signature);
+        signature = NULL;
+        signature_count = 0;
+        return -1;
+      }
+      signature = tmp;
+      capacity = new_capacity;
+    }
 
-    size++;
+    strncpy(signature[signature_count].name, name_token,
+            sizeof(signature[signature_count].name) - 1);
+    signature[signature_count]
+        .name[sizeof(signature[signature_count].name) - 1] = '\0';
+    hex_string_to_binary(hash_token, signature[signature_count].hash);
+    signature_count++;
   }
 
   fclose(file);
 
-  qsort(signature, size, sizeof(Signatures), compare_signatures);
+  qsort(signature, signature_count, sizeof(Signatures), compare_signatures);
 
-  printf("All Signatures loaded sucessfully\n");
+  printf("Loaded %zu signatures (%zu lines skipped)\n", signature_count,
+         skipped);
   return 0;
 }
 
@@ -114,18 +178,17 @@ void binSearch_Signature(uint8_t hash[32], const char *filepath) {
   Signatures key;
   memcpy(key.hash, hash, 32);
 
-  void *result =
-      bsearch(&key, signature, size, sizeof(Signatures), compare_signatures);
+  Signatures *result = bsearch(&key, signature, signature_count,
+                               sizeof(Signatures), compare_signatures);
   if (result != NULL) {
-    Signatures *result_key = (Signatures *)result;
     printf("\033[1;31m[!] Malware Found:\033[0m\n");
     printf("Filepath : %s\n", filepath);
-    printf("Match : %s\n\n", result_key->name);
-    ;
+    printf("Match : %s\n\n", result->name);
   }
 }
 
-void free_Signatures() {
-  if (signature != NULL)
-    free(signature);
+void free_Signatures(void) {
+  free(signature);
+  signature = NULL;
+  signature_count = 0;
 }

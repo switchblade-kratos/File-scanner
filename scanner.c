@@ -1,6 +1,7 @@
 #include "loader.h"
 #include "sha256.h"
 #include <dirent.h>
+#include <errno.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
@@ -23,6 +24,8 @@ void directory_scan(const char *dirname) {
     if (!strcmp(entry->d_name, ".") || !strcmp(entry->d_name, ".."))
       continue;
 
+    snprintf(path, sizeof(path), "%s/%s", dirname, entry->d_name);
+
     unsigned char type = entry->d_type;
     if (type == DT_UNKNOWN) {
       struct stat statbuf;
@@ -34,13 +37,17 @@ void directory_scan(const char *dirname) {
         }
       }
     }
-    snprintf(path, sizeof(path), "%s/%s", dirname, entry->d_name);
     if (type == DT_DIR)
       directory_scan(path);
     else if (type == DT_REG) {
       uint8_t hashval[32];
-      sha256(path, hashval);
-      binSearch_Signature(hashval, path);
+      int success = 0;
+      success = sha256(path, hashval);
+      if (success == 0)
+        binSearch_Signature(hashval, path);
+      else
+        fprintf(stderr, "ERROR: Could not hash %s : %s\n", path,
+                strerror(errno));
     }
   }
   closedir(directory);
