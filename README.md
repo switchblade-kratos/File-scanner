@@ -23,19 +23,19 @@ This is a learning project. It detects exact matches only, so it is not a replac
 ## Building
 
 ```
-gcc -Wall -Wextra -O2 main.c scanner.c loader.c sha256.c -o file-scanner
+make
 ```
 
 For development, a debug build with sanitizers catches memory errors:
 
 ```
-gcc -Wall -Wextra -g -fsanitize=address,undefined main.c scanner.c loader.c sha256.c -o file-scanner
+make debug
 ```
 
 ## Usage
 
 ```
-Usage: ./file-scanner [options]
+Usage: ./build/file-scanner [options]
 
 Options:
   -f, --file <path>        Scan a single file
@@ -47,9 +47,9 @@ Options:
 Examples:
 
 ```
-./file-scanner -f suspicious.bin
-./file-scanner -d ~/Downloads
-./file-scanner -d ~/Downloads -f ~/notes/report.pdf
+./build/file-scanner -f suspicious.bin
+./build/file-scanner -d ~/Downloads
+./build/file-scanner -d ~/Downloads -f ~/notes/report.pdf
 ```
 
 Example output:
@@ -75,12 +75,12 @@ Scanned: 3 | Infected: 1 | Errors: 1
 This makes the scanner usable in scripts:
 
 ```
-./file-scanner -d ./uploads || echo "Scan flagged something"
+./build/file-scanner -d ./uploads || echo "Scan flagged something"
 ```
 
 ## Signature file
 
-Signatures are read from `test_signatures.txt` in the current directory. Each line is a name and a SHA-256 hash separated by a colon:
+Signatures are read from `data/test_signatures.txt`, relative to the directory you run the scanner from. Each line is a name and a SHA-256 hash separated by a colon:
 
 ```
 # Lines starting with # or // are comments
@@ -115,7 +115,6 @@ main.c               Argument parsing and program flow
 scanner.c/h          Directory walking and per-file scanning
 loader.c/h           Signature file parsing, validation and lookup
 sha256.c/h           SHA-256 implementation
-cli_sha256.c         Standalone tool that prints the SHA-256 of a file
 test_signatures.txt  Sample signature database
 ```
 
@@ -129,7 +128,7 @@ echo "clean" > testdir/clean.txt
 echo "fake malware" > testdir/sub/evil.txt
 echo "locked" > testdir/locked.txt && chmod 000 testdir/locked.txt
 sha256sum testdir/sub/evil.txt    # add this hash to test_signatures.txt
-./file-scanner -d testdir
+./build/file-scanner -d testdir
 ```
 
 Expected: `evil.txt` is reported, `clean.txt` is not, and `locked.txt` produces a permission error without stopping the scan. If you run as root, the permission check does not apply.
@@ -137,9 +136,9 @@ Expected: `evil.txt` is reported, `clean.txt` is not, and `locked.txt` produces 
 Other useful checks:
 
 ```
-./file-scanner -f /dev/zero    # rejected as not a regular file, does not hang
-./file-scanner -f nope.txt     # reports that the file does not exist
-./file-scanner; echo $?        # prints usage hint, exit code 2
+./build/file-scanner -f /dev/zero    # rejected as not a regular file, does not hang
+./build/file-scanner -f nope.txt     # reports that the file does not exist
+./build/file-scanner; echo $?        # prints usage hint, exit code 2
 ```
 
 ## Limitations

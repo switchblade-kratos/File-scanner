@@ -72,7 +72,7 @@ int main(int argc, char *argv[]) {
     return 2;
   }
 
-  int success = load_signatures("./test_signatures.txt");
+  int success = load_signatures("./data/test_signatures.txt");
   if (success == -1) {
     fprintf(stderr, "Error: Could not load signatures\n");
     return 2;
