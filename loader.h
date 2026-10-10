@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-void binSearch_Signature(uint8_t hash[32], const char *filepath);
+int binSearch_Signature(uint8_t hash[32], const char *filepath);
 int load_signatures(const char *filename);
 void free_Signatures();
 

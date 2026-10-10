@@ -85,7 +85,7 @@ void sha256_transform(SHA256_CTX *ctx) {
 }
 
 void sha256_update(SHA256_CTX *ctx, const uint8_t *data, size_t len) {
-  for (int i = 0; i < len; i++) {
+  for (size_t i = 0; i < len; i++) {
     ctx->data[ctx->datalen] = data[i];
     ctx->datalen += 1;
     ctx->bitlen += 8;

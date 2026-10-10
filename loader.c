@@ -174,7 +174,7 @@ int load_signatures(const char *filename) {
   return 0;
 }
 
-void binSearch_Signature(uint8_t hash[32], const char *filepath) {
+int binSearch_Signature(uint8_t hash[32], const char *filepath) {
   Signatures key;
   memcpy(key.hash, hash, 32);
 
@@ -184,7 +184,9 @@ void binSearch_Signature(uint8_t hash[32], const char *filepath) {
     printf("\033[1;31m[!] Malware Found:\033[0m\n");
     printf("Filepath : %s\n", filepath);
     printf("Match : %s\n\n", result->name);
+    return 1;
   }
+  return 0;
 }
 
 void free_Signatures(void) {

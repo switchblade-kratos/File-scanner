@@ -1,13 +1,18 @@
+#include "scanner.h"
 #include "loader.h"
 #include "sha256.h"
 #include <dirent.h>
 #include <errno.h>
+#include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
 
-void directory_scan(const char *dirname) {
+void directory_scan(const char *dirname, ScanStats *stats) {
+  if (dirname == NULL)
+    return;
+
   if (strcmp(dirname, "/dev") == 0 || strcmp(dirname, "/proc") == 0 ||
       strcmp(dirname, "/sys") == 0 || strcmp(dirname, "/run") == 0) {
     return;
@@ -15,6 +20,8 @@ void directory_scan(const char *dirname) {
 
   DIR *directory = opendir(dirname);
   if (directory == NULL) {
+    fprintf(stderr, "ERROR: Could not open %s: %s\n", dirname, strerror(errno));
+    stats->error++;
     return;
   }
 
@@ -23,9 +30,12 @@ void directory_scan(const char *dirname) {
   while ((entry = readdir(directory)) != NULL) {
     if (!strcmp(entry->d_name, ".") || !strcmp(entry->d_name, ".."))
       continue;
-
-    snprintf(path, sizeof(path), "%s/%s", dirname, entry->d_name);
-
+    int n = snprintf(path, sizeof(path), "%s/%s", dirname, entry->d_name);
+    if (n < 0 || (size_t)n >= sizeof(path)) {
+      fprintf(stderr, "ERROR: Path too long %s/%s", dirname, entry->d_name);
+      stats->error++;
+      continue;
+    }
     unsigned char type = entry->d_type;
     if (type == DT_UNKNOWN) {
       struct stat statbuf;
@@ -38,17 +48,27 @@ void directory_scan(const char *dirname) {
       }
     }
     if (type == DT_DIR)
-      directory_scan(path);
+      directory_scan(path, stats);
     else if (type == DT_REG) {
-      uint8_t hashval[32];
-      int success = 0;
-      success = sha256(path, hashval);
-      if (success == 0)
-        binSearch_Signature(hashval, path);
-      else
-        fprintf(stderr, "ERROR: Could not hash %s : %s\n", path,
-                strerror(errno));
+      file_scan(path, stats);
     }
   }
   closedir(directory);
+}
+
+int file_scan(const char *filename, ScanStats *stats) {
+  uint8_t hashval[32];
+  if (filename == NULL)
+    return -1;
+  int success = sha256(filename, hashval);
+  if (success == 0) {
+    stats->infected += binSearch_Signature(hashval, filename);
+    stats->scanned++;
+  } else {
+    fprintf(stderr, "ERROR: Could not hash %s: %s\n", filename,
+            strerror(errno));
+    stats->error++;
+    return -1;
+  }
+  return 0;
 }

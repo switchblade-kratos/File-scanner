@@ -14,6 +14,8 @@ int main(int argc, char *argv[]) {
   char *filename = NULL;
   char *dirname = NULL;
 
+  ScanStats stats = {0, 0, 0};
+
   int verbose = 0;
   static struct option long_opts[] = {
       {"help", no_argument, 0, 'h'},
@@ -28,7 +30,9 @@ int main(int argc, char *argv[]) {
       return 0;
     case 'd':
       dirname = optarg;
-      directory_scan(dirname);
+      directory_scan(dirname, &stats);
+      printf("%d Files scanned, %d infected, %d errors\n", stats.scanned,
+             stats.infected, stats.error);
       break;
     case 'v':
       verbose = 1;
