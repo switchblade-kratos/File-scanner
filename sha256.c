@@ -1,4 +1,5 @@
 #include "sha256.h"
+#include <errno.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -144,6 +145,13 @@ int sha256(const char *filename, uint8_t *hash) {
 
   while ((bytes_read = fread(file_chunk, 1, sizeof(file_chunk), file))) {
     sha256_update(&ctx, file_chunk, bytes_read);
+  }
+
+  if (ferror(file)) {
+    int saved_errno = errno;
+    fclose(file);
+    errno = saved_errno;
+    return -1;
   }
 
   sha256_hash(&ctx, hash);

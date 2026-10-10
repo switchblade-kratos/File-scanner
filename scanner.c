@@ -32,7 +32,7 @@ void directory_scan(const char *dirname, ScanStats *stats) {
       continue;
     int n = snprintf(path, sizeof(path), "%s/%s", dirname, entry->d_name);
     if (n < 0 || (size_t)n >= sizeof(path)) {
-      fprintf(stderr, "ERROR: Path too long %s/%s", dirname, entry->d_name);
+      fprintf(stderr, "ERROR: Path too long: %s/%s\n", dirname, entry->d_name);
       stats->error++;
       continue;
     }
@@ -57,9 +57,28 @@ void directory_scan(const char *dirname, ScanStats *stats) {
 }
 
 int file_scan(const char *filename, ScanStats *stats) {
-  uint8_t hashval[32];
-  if (filename == NULL)
+  if (filename == NULL) {
+    stats->error++;
     return -1;
+  }
+
+  struct stat st;
+
+  if (stat(filename, &st) != 0) {
+    fprintf(stderr, "ERROR: Could not access %s: %s\n", filename,
+            strerror(errno));
+    stats->error++;
+    return -1;
+  }
+
+  if (!S_ISREG(st.st_mode)) {
+    fprintf(stderr, "ERROR: %s is not a regular file\n", filename);
+    stats->error++;
+    return -1;
+  }
+
+  uint8_t hashval[32];
+
   int success = sha256(filename, hashval);
   if (success == 0) {
     stats->infected += binSearch_Signature(hashval, filename);

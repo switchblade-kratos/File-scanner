@@ -68,7 +68,7 @@ int main(int argc, char *argv[]) {
 
   if (filename == NULL && dirname == NULL) {
     fprintf(stderr, "ERROR: Nothing to scan\n");
-    fprintf(stderr, "Try %s -h for help", argv[0]);
+    fprintf(stderr, "Try %s -h for help\n", argv[0]);
     return 2;
   }
 
@@ -86,5 +86,6 @@ int main(int argc, char *argv[]) {
   printf("Scanned: %d | Infected: %d | Errors: %d\n", stats.scanned,
          stats.infected, stats.error);
   free_Signatures();
-  return 0;
+
+  return stats.infected > 0 ? 1 : 0;
 }
