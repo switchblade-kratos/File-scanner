@@ -34,14 +34,16 @@ int main(int argc, char *argv[]) {
       {"directory", required_argument, 0, 'd'},
       {"verbose", no_argument, 0, 'v'},
       {"file", required_argument, 0, 'f'},
+      {"signatures", required_argument, 0, 's'},
       {0, 0, 0, 0} // array must end with this
   };
   int opt = 0;
 
   char *filename = NULL;
   char *dirname = NULL;
+  char *signame = "./data/test_signatures.txt";
 
-  while ((opt = getopt_long(argc, argv, "hd:f:v", long_opts, NULL)) != -1) {
+  while ((opt = getopt_long(argc, argv, "hd:f:s:v", long_opts, NULL)) != -1) {
 
     switch (opt) {
     case 'h':
@@ -52,6 +54,9 @@ int main(int argc, char *argv[]) {
       break;
     case 'f':
       filename = optarg;
+      break;
+    case 's':
+      signame = optarg;
       break;
     case 'v':
       verbose = 1;
@@ -72,7 +77,7 @@ int main(int argc, char *argv[]) {
     return 2;
   }
 
-  int success = load_signatures("./data/test_signatures.txt");
+  int success = load_signatures(signame);
   if (success == -1) {
     fprintf(stderr, "Error: Could not load signatures\n");
     return 2;
