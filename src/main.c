@@ -12,6 +12,8 @@ static void print_help(const char *prog) {
   printf("Options:\n");
   printf("  -f, --file <path>        Scan a single file\n");
   printf("  -d, --directory <path>   Scan a directory recursively\n");
+  printf("  -s, --signatures <file>  Signature file (default: "
+         "./data/test_signatures.txt)\n");
   printf("  -v, --verbose            Print each file as it is scanned\n");
   printf("  -h, --help               Show this help and exit\n\n");
   printf("Exit status:\n");
